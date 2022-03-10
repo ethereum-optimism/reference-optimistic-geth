@@ -38,6 +38,10 @@ var (
 	ErrTxTypeNotSupported   = errors.New("transaction type not supported")
 	ErrGasFeeCapTooLow      = errors.New("fee cap less than base fee")
 	errShortTypedTx         = errors.New("typed transaction too short")
+
+	// Custom Errors for deposits
+	ErrDepositTxTypeNotSupported = errors.New("deposit transaction type not supported")
+	errUnversionedDeposit        = errors.New("deposit transaction does not have version byte")
 )
 
 // Transaction types.
@@ -105,6 +109,10 @@ func (tx *Transaction) EncodeRLP(w io.Writer) error {
 // encodeTyped writes the canonical encoding of a typed transaction to w.
 func (tx *Transaction) encodeTyped(w *bytes.Buffer) error {
 	w.WriteByte(tx.Type())
+	// Only support v0 right now.
+	if tx.Type() == DepositTxType {
+		w.WriteByte(DepositTxVersionZeroType)
+	}
 	return rlp.Encode(w, tx.inner)
 }
 
@@ -183,6 +191,16 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 	case DynamicFeeTxType:
 		var inner DynamicFeeTx
 		err := rlp.DecodeBytes(b[1:], &inner)
+		return &inner, err
+	case DepositTxType:
+		var inner DepositTx
+		if len(b) < 2 {
+			return nil, errUnversionedDeposit
+		}
+		if b[1] != DepositTxVersionZeroType {
+			return nil, ErrDepositTxTypeNotSupported
+		}
+		err := rlp.DecodeBytes(b[2:], &inner)
 		return &inner, err
 	default:
 		return nil, ErrTxTypeNotSupported
@@ -283,6 +301,25 @@ func (tx *Transaction) Nonce() uint64 { return tx.inner.nonce() }
 // For contract-creation transactions, To returns nil.
 func (tx *Transaction) To() *common.Address {
 	return copyAddressPtr(tx.inner.to())
+}
+
+// SourceHash returns the hash that uniquely identifies the source of the deposit tx,
+// e.g. a user deposit event, or a L1 info deposit included in a specific L2 block height.
+// Non-deposit transactions return a zeroed hash.
+func (tx *Transaction) SourceHash() common.Hash {
+	if dep, ok := tx.inner.(*DepositTx); ok {
+		return dep.SourceHash
+	}
+	return common.Hash{}
+}
+
+// Mint returns the ETH to mint in the deposit tx.
+// This returns nil if there is nothing to mint, or if this is not a deposit tx.
+func (tx *Transaction) Mint() *big.Int {
+	if dep, ok := tx.inner.(*DepositTx); ok {
+		return dep.Mint
+	}
+	return nil
 }
 
 // Cost returns gas * gasPrice + value.
@@ -590,6 +627,7 @@ type Message struct {
 	data       []byte
 	accessList AccessList
 	isFake     bool
+	mint       *big.Int
 }
 
 func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice, gasFeeCap, gasTipCap *big.Int, data []byte, accessList AccessList, isFake bool) Message {
@@ -605,6 +643,7 @@ func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *b
 		data:       data,
 		accessList: accessList,
 		isFake:     isFake,
+		mint:       big.NewInt(0),
 	}
 }
 
@@ -621,6 +660,9 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		data:       tx.Data(),
 		accessList: tx.AccessList(),
 		isFake:     false,
+	}
+	if dep, ok := tx.inner.(*DepositTx); ok {
+		msg.mint = dep.Mint
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {
@@ -642,6 +684,7 @@ func (m Message) Nonce() uint64          { return m.nonce }
 func (m Message) Data() []byte           { return m.data }
 func (m Message) AccessList() AccessList { return m.accessList }
 func (m Message) IsFake() bool           { return m.isFake }
+func (m Message) Mint() *big.Int         { return m.mint }
 
 // copyAddressPtr copies an address.
 func copyAddressPtr(a *common.Address) *common.Address {
