@@ -35,21 +35,27 @@ type DepositTx struct {
 	Mint *big.Int `rlp:"nil"`
 	// Value is transferred from L2 balance, executed after Mint (if any)
 	Value *big.Int
-	// gas limit
-	Gas  uint64
-	Data []byte
+	// Guaranteed Gas is paid for on L1. It is always available and non-refundable.
+	GuaranteedGas uint64
+	// Additional Gas is bought and paid for on L2. It may not be provided if
+	// there is not enough remaining gas or the price is too low.
+	AdditionalGas      uint64
+	AdditionalGasPrice *big.Int
+	Data               []byte
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
 func (tx *DepositTx) copy() TxData {
 	cpy := &DepositTx{
-		SourceHash: tx.SourceHash,
-		From:       tx.From,
-		To:         copyAddressPtr(tx.To),
-		Mint:       nil,
-		Value:      new(big.Int),
-		Gas:        tx.Gas,
-		Data:       common.CopyBytes(tx.Data),
+		SourceHash:         tx.SourceHash,
+		From:               tx.From,
+		To:                 copyAddressPtr(tx.To),
+		Mint:               nil,
+		Value:              new(big.Int),
+		GuaranteedGas:      tx.GuaranteedGas,
+		AdditionalGas:      tx.AdditionalGas,
+		AdditionalGasPrice: new(big.Int),
+		Data:               common.CopyBytes(tx.Data),
 	}
 	if tx.Mint != nil {
 		cpy.Mint = new(big.Int).Set(tx.Mint)
@@ -57,11 +63,15 @@ func (tx *DepositTx) copy() TxData {
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
 	}
+	if tx.AdditionalGasPrice != nil {
+		cpy.AdditionalGasPrice.Set(tx.AdditionalGasPrice)
+	}
 	return cpy
 }
 
 // DepositsNonce identifies a deposit, since go-ethereum abstracts all transaction types to a core.Message.
 // Deposits do not set a nonce, deposits are included by the system and cannot be repeated or included elsewhere.
+// Note: This is one less than the maximum value because of a go-etheruem test that fails otherwise.
 const DepositsNonce uint64 = 0xffff_ffff_ffff_fffd
 
 // accessors for innerTx.
@@ -70,7 +80,7 @@ func (tx *DepositTx) chainID() *big.Int      { panic("deposits are not signed an
 func (tx *DepositTx) protected() bool        { return true }
 func (tx *DepositTx) accessList() AccessList { return nil }
 func (tx *DepositTx) data() []byte           { return tx.Data }
-func (tx *DepositTx) gas() uint64            { return tx.Gas }
+func (tx *DepositTx) gas() uint64            { return tx.GuaranteedGas }
 func (tx *DepositTx) gasFeeCap() *big.Int    { return new(big.Int) }
 func (tx *DepositTx) gasTipCap() *big.Int    { return new(big.Int) }
 func (tx *DepositTx) gasPrice() *big.Int     { return new(big.Int) }

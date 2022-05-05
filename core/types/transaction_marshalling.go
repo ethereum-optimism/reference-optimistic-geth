@@ -43,9 +43,11 @@ type txJSON struct {
 	To                   *common.Address `json:"to"`
 
 	// Deposit transaction fields
-	SourceHash *common.Hash    `json:"sourceHash,omitempty"`
-	From       *common.Address `json:"from,omitempty"`
-	Mint       *hexutil.Big    `json:"mint,omitempty"`
+	SourceHash         *common.Hash    `json:"sourceHash,omitempty"`
+	From               *common.Address `json:"from,omitempty"`
+	Mint               *hexutil.Big    `json:"mint,omitempty"`
+	AdditionalGas      *hexutil.Uint64 `json:"additionalGas,omitempty"`
+	AdditionalGasPrice *hexutil.Big    `json:"additionalGasPrice,omitempty"`
 
 	// Access list transaction fields:
 	ChainID    *hexutil.Big `json:"chainId,omitempty"`
@@ -100,7 +102,9 @@ func (t *Transaction) MarshalJSON() ([]byte, error) {
 		enc.R = (*hexutil.Big)(tx.R)
 		enc.S = (*hexutil.Big)(tx.S)
 	case *DepositTx:
-		enc.Gas = (*hexutil.Uint64)(&tx.Gas)
+		enc.Gas = (*hexutil.Uint64)(&tx.GuaranteedGas)
+		enc.AdditionalGas = (*hexutil.Uint64)(&tx.AdditionalGas)
+		enc.AdditionalGasPrice = (*hexutil.Big)(tx.AdditionalGasPrice)
 		enc.Value = (*hexutil.Big)(tx.Value)
 		enc.Data = (*hexutil.Bytes)(&tx.Data)
 		enc.To = t.To()
@@ -288,7 +292,12 @@ func (t *Transaction) UnmarshalJSON(input []byte) error {
 		if dec.To != nil {
 			itx.To = dec.To
 		}
-		itx.Gas = uint64(*dec.Gas)
+		itx.GuaranteedGas = uint64(*dec.Gas)
+		itx.AdditionalGas = uint64(*dec.AdditionalGas)
+		if dec.AdditionalGasPrice == nil {
+			return errors.New("missing required field 'AdditionalGasPrice' in transaction")
+		}
+		itx.AdditionalGasPrice = (*big.Int)(dec.AdditionalGasPrice)
 		if dec.Value == nil {
 			return errors.New("missing required field 'value' in transaction")
 		}

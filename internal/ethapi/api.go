@@ -1231,8 +1231,10 @@ type RPCTransaction struct {
 	S                *hexutil.Big      `json:"s"`
 
 	// deposit-tx only
-	SourceHash *common.Hash `json:"sourceHash,omitempty"`
-	Mint       *hexutil.Big `json:"mint,omitempty"`
+	SourceHash         *common.Hash    `json:"sourceHash,omitempty"`
+	Mint               *hexutil.Big    `json:"mint,omitempty"`
+	AdditionalGas      *hexutil.Uint64 `json:"additionalGas,omitempty"`
+	AdditionalGasPrice *hexutil.Big    `json:"additionalGasPrice,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1243,15 +1245,17 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	if tx.Type() == types.DepositTxType {
 		srcHash := tx.SourceHash()
 		result := &RPCTransaction{
-			Type:       hexutil.Uint64(tx.Type()),
-			From:       from,
-			Gas:        hexutil.Uint64(tx.Gas()),
-			Hash:       tx.Hash(),
-			Input:      hexutil.Bytes(tx.Data()),
-			To:         tx.To(),
-			Value:      (*hexutil.Big)(tx.Value()),
-			Mint:       (*hexutil.Big)(tx.Mint()),
-			SourceHash: &srcHash,
+			Type:               hexutil.Uint64(tx.Type()),
+			From:               from,
+			Gas:                hexutil.Uint64(tx.Gas()),
+			Hash:               tx.Hash(),
+			Input:              hexutil.Bytes(tx.Data()),
+			To:                 tx.To(),
+			Value:              (*hexutil.Big)(tx.Value()),
+			Mint:               (*hexutil.Big)(tx.Mint()),
+			SourceHash:         &srcHash,
+			AdditionalGas:      (*hexutil.Uint64)(tx.AdditionalGas()),
+			AdditionalGasPrice: (*hexutil.Big)(tx.AdditionalGasPrice()),
 		}
 		if blockHash != (common.Hash{}) {
 			result.BlockHash = &blockHash

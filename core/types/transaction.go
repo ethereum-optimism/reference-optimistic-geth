@@ -308,6 +308,24 @@ func (tx *Transaction) Mint() *big.Int {
 	return nil
 }
 
+// AdditionalGas returns the amount of additional gas that a deposit tx buys.
+// Returns nil if the transaction is not a deposit transaction.
+func (tx *Transaction) AdditionalGas() *uint64 {
+	if dep, ok := tx.inner.(*DepositTx); ok {
+		return &dep.AdditionalGas
+	}
+	return nil
+}
+
+// AdditionalGasPrice returns price (in wei) of the additional gas of a deposit tx.
+// Returns nil if the transaction is not a deposit transaction.
+func (tx *Transaction) AdditionalGasPrice() *big.Int {
+	if dep, ok := tx.inner.(*DepositTx); ok {
+		return dep.AdditionalGasPrice
+	}
+	return nil
+}
+
 // Cost returns gas * gasPrice + value.
 func (tx *Transaction) Cost() *big.Int {
 	total := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(tx.Gas()))
