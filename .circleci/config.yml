@@ -41,7 +41,7 @@ workflows:
               only:
                 - optimism-prototype
           image-name: reference-optimistic-geth
-          image-tag: develop
+          image-tag: latest
           dockerfile: Dockerfile
           name: Build reference-optimistic-geth develop
       - build-dockerfile:
