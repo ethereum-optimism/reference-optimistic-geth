@@ -24,6 +24,8 @@ import (
 
 const DepositTxType = 0x7E
 
+var zeroBig = new(big.Int)
+
 type DepositTx struct {
 	// SourceHash uniquely identifies the source of the deposit
 	SourceHash common.Hash
@@ -79,9 +81,9 @@ func (tx *DepositTx) nonce() uint64          { return DepositsNonce }
 func (tx *DepositTx) to() *common.Address    { return tx.To }
 
 func (tx *DepositTx) rawSignatureValues() (v, r, s *big.Int) {
-	panic("deposit tx does not have a signature")
+	return zeroBig, zeroBig, zeroBig
 }
 
 func (tx *DepositTx) setSignatureValues(chainID, v, r, s *big.Int) {
-	panic("deposit tx does not have a signature")
+	// this is a noop for deposit transactions
 }
