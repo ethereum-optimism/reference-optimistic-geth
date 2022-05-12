@@ -66,7 +66,7 @@ const DepositsNonce uint64 = 0xffff_ffff_ffff_fffd
 
 // accessors for innerTx.
 func (tx *DepositTx) txType() byte           { return DepositTxType }
-func (tx *DepositTx) chainID() *big.Int      { panic("deposits are not signed and do not have a chain-ID") }
+func (tx *DepositTx) chainID() *big.Int      { return common.Big0 }
 func (tx *DepositTx) protected() bool        { return true }
 func (tx *DepositTx) accessList() AccessList { return nil }
 func (tx *DepositTx) data() []byte           { return tx.Data }
