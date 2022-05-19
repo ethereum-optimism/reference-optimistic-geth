@@ -47,6 +47,17 @@ workflows:
       - build-dockerfile:
           context:
             - optimism
+          filters:
+            branches:
+              only:
+                - optimism-prototype
+          image-name: reference-optimistic-geth
+          image-tag: latest-entrypoint
+          dockerfile: Dockerfile.entrypoint
+          name: Build reference-optimistic-geth with entrypoint
+      - build-dockerfile:
+          context:
+            - optimism
           image-name: reference-optimistic-geth
           image-tag: $CIRCLE_SHA1
           dockerfile: Dockerfile
