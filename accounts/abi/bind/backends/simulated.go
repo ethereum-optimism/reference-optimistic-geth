@@ -631,6 +631,7 @@ func (b *SimulatedBackend) callContract(ctx context.Context, call ethereum.CallM
 	// Execute the call.
 	msg := callMsg{call}
 
+	// TODO: Hook in tx processing here
 	txContext := core.NewEVMTxContext(msg)
 	evmContext := core.NewEVMBlockContext(block.Header(), b.blockchain, nil)
 	// Create a new environment which holds all relevant information

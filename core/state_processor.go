@@ -84,6 +84,9 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
+		if i == 0 {
+			opts[i] = append(opts[i], types.L1AttributesOption())
+		}
 		msg, err := tx.AsMessage(types.MakeSigner(p.config, header.Number), header.BaseFee, opts[i]...)
 		if err != nil {
 			return nil, nil, 0, fmt.Errorf("could not apply tx %d [%v]: %w", i, tx.Hash().Hex(), err)
@@ -107,6 +110,8 @@ func applyTransaction(msg types.Message, config *params.ChainConfig, bc ChainCon
 	txContext := NewEVMTxContext(msg)
 	evm.Reset(txContext, statedb)
 
+	// TODO: hook here?
+	// Feeds in from Process + miner
 	// Apply the transaction to the current state (included in the env).
 	result, err := ApplyMessage(evm, msg, gp)
 	if err != nil {
@@ -120,7 +125,10 @@ func applyTransaction(msg types.Message, config *params.ChainConfig, bc ChainCon
 	} else {
 		root = statedb.IntermediateRoot(config.IsEIP158(blockNumber)).Bytes()
 	}
-	*usedGas += result.UsedGas
+	// This is where gas is recorded for header validation.
+	if !msg.IsL1Attributes() {
+		*usedGas += result.UsedGas
+	}
 
 	// Create a new receipt for the transaction, storing the intermediate root and gas used
 	// by the tx.
@@ -158,6 +166,9 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 		l1FeeContext := NewL1FeeContext(statedb)
 		l1Cost := L1Cost(tx, l1FeeContext)
 		opts = append(opts, types.L1CostOption(l1Cost))
+		if statedb.TxIndex() == 0 {
+			opts = append(opts, types.L1AttributesOption())
+		}
 	}
 	msg, err := tx.AsMessage(types.MakeSigner(config, header.Number), header.BaseFee, opts...)
 	if err != nil {
