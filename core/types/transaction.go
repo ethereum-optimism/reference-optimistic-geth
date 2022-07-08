@@ -646,6 +646,8 @@ type Message struct {
 	isFake     bool
 	mint       *big.Int
 	l1Cost     *big.Int
+
+	isL1AttributesTx bool
 }
 
 func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice, gasFeeCap, gasTipCap *big.Int, data []byte, accessList AccessList, isFake bool) Message {
@@ -710,6 +712,7 @@ func (m Message) AccessList() AccessList { return m.accessList }
 func (m Message) IsFake() bool           { return m.isFake }
 func (m Message) Mint() *big.Int         { return m.mint }
 func (m Message) L1Cost() *big.Int       { return m.l1Cost }
+func (m Message) IsL1Attributes() bool   { return m.isL1AttributesTx }
 
 // copyAddressPtr copies an address.
 func copyAddressPtr(a *common.Address) *common.Address {
@@ -724,6 +727,15 @@ func copyAddressPtr(a *common.Address) *common.Address {
 func L1CostOption(cost *big.Int) MsgOption {
 	return MsgOptionFunc(func(_ *Transaction, msg *Message) error {
 		msg.l1Cost = cost
+		return nil
+	})
+}
+
+// L1AttributesOption disables gas metering for the L1 Attributes Transaction
+func L1AttributesOption() MsgOption {
+	return MsgOptionFunc(func(tx *Transaction, msg *Message) error {
+		// TODO: Sanity checks
+		msg.isL1AttributesTx = true
 		return nil
 	})
 }

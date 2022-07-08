@@ -83,6 +83,7 @@ type Message interface {
 	IsFake() bool
 	Data() []byte
 	AccessList() types.AccessList
+	IsL1Attributes() bool
 }
 
 // ExecutionResult includes all output after executing given evm
@@ -230,6 +231,8 @@ func (st *StateTransition) preCheck() error {
 		// Gas is free, but no refunds!
 		st.initialGas = st.msg.Gas()
 		st.gas += st.msg.Gas() // Add gas here in order to be able to execute calls.
+		// TODO: We should probably do a sub gas here other wise we could run out of gas (also from how deposits are charged).
+		// BUT, no sub gas from the GP iff we are the L1 attributes tx.
 		return nil
 	}
 	// Only check transactions that are not fake

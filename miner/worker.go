@@ -835,6 +835,7 @@ func (w *worker) updateSnapshot(env *environment) {
 func (w *worker) commitTransaction(env *environment, tx *types.Transaction) ([]*types.Log, error) {
 	snap := env.state.Snapshot()
 
+	// TODO: Hook apply TX?
 	receipt, err := core.ApplyTransaction(w.chainConfig, w.chain, &env.coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, *w.chain.GetVMConfig())
 	if err != nil {
 		env.state.RevertToSnapshot(snap)
@@ -1099,6 +1100,7 @@ func (w *worker) generateWork(genParams *generateParams) (*types.Block, error) {
 	}
 
 	for _, tx := range genParams.forceTxs {
+		// TODO: L1 Attributes Tx is always here.
 		// If we don't have enough gas for any further transactions then we're done
 		if work.gasPool.Gas() < params.TxGas {
 			log.Trace("Not enough gas for further transactions", "have", work.gasPool, "want", params.TxGas)
