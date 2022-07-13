@@ -1232,6 +1232,7 @@ type RPCTransaction struct {
 	// deposit-tx only
 	SourceHash *common.Hash `json:"sourceHash,omitempty"`
 	Mint       *hexutil.Big `json:"mint,omitempty"`
+	SubType    *hexutil.Big `json:"subType,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1243,6 +1244,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		srcHash := tx.SourceHash()
 		result := &RPCTransaction{
 			Type:       hexutil.Uint64(tx.Type()),
+			SubType:    (*hexutil.Big)(big.NewInt(types.DepositTxVersionZeroType)),
 			From:       from,
 			Gas:        hexutil.Uint64(tx.Gas()),
 			Hash:       tx.Hash(),
