@@ -1,3 +1,5 @@
+# THIS REPOSITORY IS ARCHIVED. PLEASE USE [op-geth](https://github.com/ethereum-optimism/op-geth) INSTEAD.
+
 ## Go Ethereum
 
 Official Golang implementation of the Ethereum protocol.
